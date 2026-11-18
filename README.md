@@ -11,7 +11,7 @@ setup_file=$(mktemp) && curl --proto '=https' --tlsv1.2 -fsSL 'https://raw.githu
 1. Accept your team's Tailscale invitation first.
 2. This script offers to install Tailscale from its official package server if it is missing. macOS may ask for your Mac password and VPN/system-extension approval.
 3. Sign in to Tailscale using Google with your invited work account and connect.
-4. Press Return. The script downloads and starts the private onboarding app only when the company endpoint is reachable.
+4. Press Return. The script downloads the private installer from `http://lunas-mac-mini.tail9e8551.ts.net:4445/onboarding/latest/setup.sh` without following redirects, then starts it only when the company endpoint returns the expected response.
 
 No GitHub account, organization seat, Git, or GitHub token is needed. This public repository contains only the bootstrap and this guide, not the private onboarding application, database settings, or credentials. The endpoint in the script grants no access by itself.
 
