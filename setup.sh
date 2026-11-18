@@ -1,10 +1,11 @@
 #!/bin/bash
 # Public entry point. No GitHub account, credentials, or database settings.
 set -euo pipefail
-PRIVATE_SETUP_URL='https://lunas-mac-mini.tail9e8551.ts.net:8444/onboarding/latest/setup.sh'
+PRIVATE_SETUP_URL='http://lunas-mac-mini.tail9e8551.ts.net:4445/onboarding/latest/setup.sh'
+CANONICAL_SETUP_URL='http://lunas-mac-mini.tail9e8551.ts.net:4445/onboarding/latest/setup.sh'
 if [[ "$(uname -s)" != Darwin ]]; then echo 'Please run this on a Mac.' >&2; exit 1; fi
 if [[ ! -t 0 ]]; then echo 'Download this file first, then run it with bash in Terminal.' >&2; exit 1; fi
-case "$PRIVATE_SETUP_URL" in https://*) ;; *) echo 'Installer endpoint is not configured.' >&2; exit 1;; esac
+if [[ "$PRIVATE_SETUP_URL" != "$CANONICAL_SETUP_URL" ]]; then echo 'Installer endpoint is not configured.' >&2; exit 1; fi
 printf '\n  LIMELIGHT\n  Connect your Mac. Then make it yours.\n\n'
 printf 'You need a team Tailscale invitation and your work Google account.\n'
 WORK_DIR=$(mktemp -d)
@@ -26,8 +27,12 @@ printf '\nIn Tailscale, approve the VPN/system extension if prompted.\nSign in w
 while true; do
   read -r -p 'When connected, press Return to continue (or type q to stop): ' answer
   [[ "$answer" != q && "$answer" != Q ]] || exit 0
-  if curl --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 10 --max-time 30 -fsSL "$PRIVATE_SETUP_URL" -o "$WORK_DIR/setup.sh"; then
-    break
+  META=''
+  if META=$(curl --proto '=http' --proto-redir '=http' --max-redirs 0 --connect-timeout 10 --max-time 30 -fsS --write-out '%{http_code}\n%{url_effective}\n%{redirect_url}' "$PRIVATE_SETUP_URL" -o "$WORK_DIR/setup.sh"); then
+    STATUS=$(printf '%s\n' "$META" | sed -n '1p')
+    EFFECTIVE=$(printf '%s\n' "$META" | sed -n '2p')
+    REDIRECT=$(printf '%s\n' "$META" | sed -n '3p')
+    if [[ "$STATUS" == 200 && "$EFFECTIVE" == "$PRIVATE_SETUP_URL" && -z "$REDIRECT" ]]; then break; fi
   fi
   printf '\nThe private installer is not reachable yet. Check your Tailscale connection,\nwork account, and invitation. Ask your admin if access is still denied.\n\n'
 done
